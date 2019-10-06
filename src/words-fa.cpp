@@ -7,7 +7,7 @@
 #include "map-state.h"
 
 template<typename stream_t, typename accepted_type>
-WordsDFA<stream_t, accepted_type>::WordsDFA(const std::basic_string<stream_t> s[], size_t len) {
+WordsFA<stream_t, accepted_type>::WordsFA(const std::basic_string<stream_t> s[], size_t len) {
     this->begin = new dfa_state();
     
     for (size_t i = 0; i < len; i++) {
@@ -16,7 +16,7 @@ WordsDFA<stream_t, accepted_type>::WordsDFA(const std::basic_string<stream_t> s[
 }
 
 template<typename stream_t, typename accepted_type>
-WordsDFA<stream_t, accepted_type>::WordsDFA(const std::vector<const std::basic_string<stream_t>> &v) {
+WordsFA<stream_t, accepted_type>::WordsFA(const std::vector<const std::basic_string<stream_t>> &v) {
     this->begin = new dfa_state();
     
     for (size_t i = 0; i < v.size(); i++) {
@@ -25,19 +25,19 @@ WordsDFA<stream_t, accepted_type>::WordsDFA(const std::vector<const std::basic_s
 }
 
 template<typename stream_t, typename accepted_type>
-WordsDFA<stream_t, accepted_type>::~WordsDFA() {
+WordsFA<stream_t, accepted_type>::~WordsFA() {
     if (this->begin) {
         delete this->begin;
     }
 }
 
 template<typename stream_t, typename accepted_type>
-bool WordsDFA<stream_t, accepted_type>::is_accepted(accepted_type ac) {
+bool WordsFA<stream_t, accepted_type>::is_accepted(accepted_type ac) {
     return dfa_state::is_accepted(ac);
 }
 
 template<typename stream_t, typename accepted_type>
-void WordsDFA<stream_t, accepted_type>::build(const std::basic_string<stream_t> &s, accepted_type accepted) {
+void WordsFA<stream_t, accepted_type>::build(const std::basic_string<stream_t> &s, accepted_type accepted) {
     dfa_state *cur = begin;
 
     for (auto &c :s) {
@@ -53,13 +53,13 @@ void WordsDFA<stream_t, accepted_type>::build(const std::basic_string<stream_t> 
 
 template<typename stream_t, typename accepted_type>
 template<typename StreamT>
-inline accepted_type WordsDFA<stream_t, accepted_type>::match(stream_t &current_token, StreamT &a) {
+inline accepted_type WordsFA<stream_t, accepted_type>::match(stream_t &current_token, StreamT &a) {
     return _match(current_token, a, begin);
 }
 
 template<typename stream_t, typename accepted_type>
 template<typename StreamT>
-accepted_type WordsDFA<stream_t, accepted_type>::_match(stream_t &current_token, StreamT &a, const dfa_state *cur) {
+accepted_type WordsFA<stream_t, accepted_type>::_match(stream_t &current_token, StreamT &a, const dfa_state *cur) {
     // std::cout << current_token << " " << int(current_token) << std::endl;
     if (cur->nx.count(current_token)) {
         stream_t bit = a.Read();

@@ -7,7 +7,7 @@
 
 
 template<typename stream_t, typename accepted_type=int64_t>
-class WordsDFA{
+class WordsFA{
     typename std::enable_if<is_char<stream_t>::value>::type type_check() {};
     public:
     using dfa_state = MapState<stream_t, accepted_type>;
@@ -15,11 +15,11 @@ class WordsDFA{
     dfa_state *begin;
     public:
     
-    WordsDFA(const std::basic_string<stream_t> s[], size_t len);
+    WordsFA(const std::basic_string<stream_t> s[], size_t len);
     
-    WordsDFA(const std::vector<const std::basic_string<stream_t>> &v);
+    WordsFA(const std::vector<const std::basic_string<stream_t>> &v);
 
-    ~WordsDFA();
+    ~WordsFA();
 
     template<typename StreamT>
     inline accepted_type match(stream_t &current_token, StreamT &a);

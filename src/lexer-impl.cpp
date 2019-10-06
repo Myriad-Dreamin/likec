@@ -4,7 +4,8 @@
 #define LEXER_IMPL
 
 #include "const.cpp"
-#include "words-dfa.cpp"
+#include "words-dfa.h"
+#include "serial-dfa.cpp"
 #include "lexer.h"
 #include <limits>
 #include <cctype>
@@ -16,7 +17,7 @@ template<typename stream_t, int64_t buffer_size>
 LexerResult Lexer<stream_t, buffer_size>::parse()
 {
     parseSpace();
-    if (!(this->nextToken == EOF || parseKeywords() || parseOperator() || parseIdentifier()))
+    if (!(this->nextToken == EOF || parseKeywords() || parseOperator() || parseIdentifier() || parseNumber()))
     {
         return LexerResult{LexerCode::NotMatch};
     }
@@ -43,7 +44,6 @@ bool Lexer<stream_t, buffer_size>::parseKeywords()
 template<typename stream_t, int64_t buffer_size>
 bool Lexer<stream_t, buffer_size>::parseOperator()
 {
-    std::cout << this->nextToken << " " << int(this->nextToken) << std::endl;
     static WordsDFA<stream_t> matcher(_operators, std::extent<decltype(_operators)>::value);
     auto accepted = matcher.match(this->nextToken, this->program);
     if (!WordsDFA<stream_t>::is_accepted(accepted)) {
@@ -80,18 +80,22 @@ bool Lexer<stream_t, buffer_size>::parseIdentifier()
     return false;
 }
 
-// template<typename stream_t, int64_t buffer_size>
-// bool Lexer<stream_t, buffer_size>::parseNumber()
-// {
-//     if (parseHex() || parseExponential() || parseDecimal() || parseInteger()) {
-//         return true;
-//     }
-//         // bool parseHex();
-//         // bool parseExponential();
-//         // bool parseInteger();
-//         // bool parseDecimal();
-//     return false;
-// }
+template<typename stream_t, int64_t buffer_size>
+bool Lexer<stream_t, buffer_size>::parseNumber()
+{   
+    using dfa_state = typename SerialDFA<stream_t>::dfa_state;
+    static SerialDFA<stream_t> matcher([&]() -> dfa_state* {
+        return dfa_state::alloc();
+    });
+    // if (parseHex() || parseExponential() || parseDecimal() || parseInteger()) {
+    //     return true;
+    // }
+        // bool parseHex();
+        // bool parseExponential();
+        // bool parseInteger();
+        // bool parseDecimal();
+    return false;
+}
 
 
 template<typename stream_t, int64_t buffer_size>

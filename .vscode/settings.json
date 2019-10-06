@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "deque": "cpp",
+        "string": "cpp",
+        "vector": "cpp",
+        "type_traits": "cpp",
+        "limits": "cpp",
+        "cctype": "cpp",
+        "*.tcc": "cpp"
+    }
+}

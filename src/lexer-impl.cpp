@@ -24,15 +24,26 @@ template<typename stream_t, int64_t buffer_size>
 LexerResult<stream_t> *Lexer<stream_t, buffer_size>::parse(LexerResult<stream_t> *result)
 {
     this->result = result;
+    this->result->register_report_handler([this](int64_t &row,int64_t &col) {
+        this->program.get_row_col(row, col);
+    });
+    result->code = LexerCode::OK;
     while(this->nextToken != EOF) {
         parseSpace();
-        if (!(this->nextToken == EOF || parseComment() || parseKeywords() || parseNumber() || parseConstString() || parseOperator() || parseIdentifier()))
+        this->program.record();
+        if (!(this->nextToken == EOF || parseSpace() || parseComment() || parseKeywords() ||
+            parseMark() || parseNumber() || parseConstString() || parseConstChar() ||
+            parseOperator() || parseIdentifier()))
         {
+            std::cout << "QAQ" << this->nextToken << std::endl;
+            std::basic_string<stream_t> line_buf, pointer_buf;
+            this->program.collect_lines(line_buf, pointer_buf);
+            result->set_error(line_buf, pointer_buf);
             result->code = LexerCode::NotMatch;
-            return result;
+            this->nextToken = this->program.Read();
+            // return result;
         }
     }
-    result->code = LexerCode::OK;
     return result;
 }
 
@@ -71,11 +82,19 @@ bool Lexer<stream_t, buffer_size>::parseOperator()
     return true;
 }
 
-// template<typename stream_t, int64_t buffer_size>
-// bool Lexer<stream_t, buffer_size>::parseMarks()
-// {
-//     return false;
-// }
+template<typename stream_t, int64_t buffer_size>
+bool Lexer<stream_t, buffer_size>::parseMark()
+{
+    for (int16_t i = 0; i < 6; i++) {
+        if (this->nextToken == _marks[i]) {
+            result->register_token(static_cast<TokenType>(
+                static_cast<raw_token_type>(TokenType::MarkBegin) + i));
+            this->nextToken = this->program.Read();
+            return true;
+        }
+    }
+    return false;
+}
 
 template<typename stream_t, int64_t buffer_size>
 bool Lexer<stream_t, buffer_size>::parseIdentifier()
@@ -104,14 +123,14 @@ bool ishex(stream_t c) {
 template<typename stream_t, int64_t buffer_size>
 bool Lexer<stream_t, buffer_size>::parseNumber()
 {
-    using fa_state = typename SerialFA<stream_t>::fa_state;
+    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
     static auto build = [&]() -> fa_state* {
-        fa_state   *begin                   = fa_state::alloc(),
-                    *hex                     = fa_state::alloc(TokenType::NumberHex),
-                    *integer                 = fa_state::alloc(TokenType::NumberInteger),
-                    *decimal                 = fa_state::alloc(TokenType::NumberDecimal),
-                    *exponential             = fa_state::alloc(TokenType::NumberExponential),
-                    *integer_or_maybe_others = fa_state::alloc(TokenType::NumberInteger),
+        fa_state    *begin                   = fa_state::alloc(),
+                    *hex                     = fa_state::alloc(static_cast<raw_token_type>(TokenType::NumberHex)),
+                    *integer                 = fa_state::alloc(static_cast<raw_token_type>(TokenType::NumberInteger)),
+                    *decimal                 = fa_state::alloc(static_cast<raw_token_type>(TokenType::NumberDecimal)),
+                    *exponential             = fa_state::alloc(static_cast<raw_token_type>(TokenType::NumberExponential)),
+                    *integer_or_maybe_others = fa_state::alloc(static_cast<raw_token_type>(TokenType::NumberInteger)),
                     *maybe_hex               = fa_state::alloc(),
                     *maybe_integer           = fa_state::alloc(),
                     *maybe_decimal           = fa_state::alloc(),
@@ -154,7 +173,7 @@ bool Lexer<stream_t, buffer_size>::parseNumber()
 
         return begin;
     };
-    static SerialFA<stream_t> matcher(build);
+    static SerialFA<stream_t, raw_token_type> matcher(build);
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
@@ -171,17 +190,19 @@ bool Lexer<stream_t, buffer_size>::parseNumber()
 template<typename stream_t, int64_t buffer_size>
 bool Lexer<stream_t, buffer_size>::parseConstString()
 {
-    using fa_state = typename SerialFA<stream_t>::fa_state;
+    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
     static auto build = [&]() -> fa_state* {
-        fa_state   *begin        = fa_state::alloc(),
+        fa_state    *begin        = fa_state::alloc(),
                     *maybe_string = fa_state::alloc(),
                     *backslash = fa_state::alloc(),
-                    *accept = fa_state::alloc(TokenType::ConstStringType);
+                    *accept = fa_state::alloc(static_cast<raw_token_type>(TokenType::ConstStringType));
         
         (*begin)
                 >> std::make_pair('"', maybe_string);
         
         (*maybe_string)
+                >> std::make_pair('\n', fa_state::discard)
+                >> std::make_pair(EOF, fa_state::discard)
                 >> std::make_pair('\\', backslash)
                 >> std::make_pair('"', accept)
                 >> std::make_pair(fa_state::any, maybe_string);
@@ -193,11 +214,62 @@ bool Lexer<stream_t, buffer_size>::parseConstString()
 
         return begin;
     };
-    static SerialFA<stream_t> matcher(build);
+    static SerialFA<stream_t, raw_token_type> matcher(build);
+
+    std::basic_string<stream_t> buf;
+    auto accepted = matcher.match(this->nextToken, buf, this->program);
+    std::cout << "?" << this->nextToken << ":" << int(this->nextToken) << " " << buf << ".." << accepted << std::endl; 
+    if(accepted == fa_state::discard->accepted){
+        reclaim(buf);
+        return false;
+    }
+    
+    if (!SerialFA<stream_t>::is_accepted(accepted)) {
+        return false;
+    }
+
+    result->register_token(static_cast<TokenType>(accepted), buf);
+
+    return true;
+}
+
+
+template<typename stream_t, int64_t buffer_size>
+bool Lexer<stream_t, buffer_size>::parseConstChar()
+{
+    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
+    static auto build = [&]() -> fa_state* {
+        fa_state    *begin        = fa_state::alloc(),
+                    *maybe_char = fa_state::alloc(),
+                    *backslash = fa_state::alloc(),
+                    *accept = fa_state::alloc(static_cast<raw_token_type>(TokenType::ConstCharType));
+        
+        (*begin)
+                >> std::make_pair('\'', maybe_char);
+        
+        (*maybe_char)
+                >> std::make_pair('\n', fa_state::discard)
+                >> std::make_pair(EOF, fa_state::discard)
+                >> std::make_pair('\\', backslash)
+                >> std::make_pair('\'', accept)
+                >> std::make_pair(fa_state::any, maybe_char);
+                
+        (*backslash)
+                >> fa_state::string(line_break, maybe_char)
+                >> std::make_pair(fa_state::any, maybe_char);
+                // >> std::make_pair();
+
+        return begin;
+    };
+    static SerialFA<stream_t, raw_token_type> matcher(build);
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
     // std::cout << "?" << this->nextToken << ":" << int(this->nextToken) << " " << buf << ".." << accepted << std::endl; 
+    if(accepted == fa_state::discard->accepted){
+        reclaim(buf);
+        return false;
+    }
     if (!SerialFA<stream_t>::is_accepted(accepted)) {
         return false;
     }
@@ -210,13 +282,13 @@ bool Lexer<stream_t, buffer_size>::parseConstString()
 template<typename stream_t, int64_t buffer_size>
 bool Lexer<stream_t, buffer_size>::parseComment()
 {
-    using fa_state = typename SerialFA<stream_t>::fa_state;
+    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state   *begin        = fa_state::alloc(),
                     *maybe_comment = fa_state::alloc(),
                     *skipline = fa_state::alloc(),
                     *skiplines = fa_state::alloc(),
-                    *accept = fa_state::alloc(TokenType::CommentType);
+                    *accept = fa_state::alloc(static_cast<raw_token_type>(TokenType::CommentType));
         
         (*begin)
                 >> std::make_pair('/', maybe_comment);
@@ -237,7 +309,7 @@ bool Lexer<stream_t, buffer_size>::parseComment()
 
         return begin;
     };
-    static SerialFA<stream_t> matcher(build);
+    static SerialFA<stream_t, raw_token_type> matcher(build);
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
@@ -268,9 +340,11 @@ bool Lexer<stream_t, buffer_size>::parseSpace()
 
 template<typename stream_t, int64_t buffer_size>
 void Lexer<stream_t, buffer_size>::reclaim(const std::basic_string<stream_t> &s) {
-    this->program.Unread(this->nextToken);
+    // this->program.Unread(this->nextToken);
+    this->program.Unread();
     for (size_t i = s.size() - 1; i > 0; i--) {
-        this->program.Unread(s[i]);
+        this->program.Unread();
+        // this->program.Unread(s[i]);
     }
     this->nextToken = s[0];
 }

@@ -68,7 +68,8 @@ accepted_type WordsFA<stream_t, accepted_type>::_match(stream_t &current_token, 
         if (is_accepted(nx_accepted)) {
             return nx_accepted;
         }
-        a.Unread(current_token);
+        a.Unread();
+        // a.Unread(current_token);
         current_token = bit;
         return cur->accepted;
     }

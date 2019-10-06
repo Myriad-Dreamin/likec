@@ -10,13 +10,15 @@ namespace parse {
 
 template<typename stream_t, typename accepted_type>
 struct SerialState {
-    struct any_flag{};
-    static const any_flag any;
-
-    typedef std::function<bool(stream_t)> predicate;
     typename std::enable_if<std::is_signed<accepted_type>::value>::type type_check() {};
     using cur_type = SerialState<stream_t, accepted_type>;
+    typedef std::function<bool(stream_t)> predicate;
     typedef std::pair<predicate, cur_type*> pattern;
+    struct any_flag{};
+
+    static const any_flag any;
+    static cur_type *discard;
+
     accepted_type accepted;
 
     SerialState(const cur_type &b) : accepted(b.accepted) {}
@@ -78,8 +80,10 @@ struct SerialState {
         std::basic_string<stream_t> &result,
         StreamT &a) {
 
-        // std::cout << reinterpret_cast<uint64_t>(this) << " matching" << current_token << ":" << int(current_token) << " " << this->accepted << std::endl;
-        
+        std::cout << reinterpret_cast<uint64_t>(this) << " matching" << current_token << ":" << int(current_token) << " " << this->accepted << std::endl;
+        if (this == discard) {
+            return this->accepted;
+        }
         
         stream_t bit = a.Read();
         for (auto &p :patterns) {
@@ -95,11 +99,17 @@ struct SerialState {
             }
         }
         // std::cout << reinterpret_cast<uint64_t>(this) << " matched" << int(current_token) << " " << this->accepted << std::endl;
-        a.Unread(bit);
+        // a.Unread(bit);
+        a.Unread();
         return this->accepted;
     }
 
-    static cur_type *alloc(accepted_type accepted=-1) { return allocator.alloc(accepted);}
+    static cur_type *alloc() {
+        return allocator.alloc(-1);}
+
+    static cur_type *alloc(accepted_type accepted) {
+        return allocator.alloc(accepted);}
+
     static const std::pair<stream_t, cur_type*> &&string(const std::basic_string<stream_t> &str, cur_type *suffer_state) {
         if (str.length() <= 0) {
             throw std::invalid_argument("empty string transition is not allowed");
@@ -108,7 +118,7 @@ struct SerialState {
     };
     struct Allocator {
         std::vector<cur_type*> allocated;
-        Allocator() {};
+        Allocator() { };
         ~Allocator() {
             for (auto &node :allocated) {
                 delete node;
@@ -149,6 +159,10 @@ typename SerialState<stream_t, accepted_type>::Allocator
 template<typename stream_t, typename accepted_type>
 const typename SerialState<stream_t, accepted_type>::any_flag
     SerialState<stream_t, accepted_type>::any;
+    
+template<typename stream_t, typename accepted_type>
+typename SerialState<stream_t, accepted_type>::cur_type
+    *SerialState<stream_t, accepted_type>::discard = SerialState<stream_t, accepted_type>::alloc(-2);
 
 
 template<typename stream_t, typename accepted_type=int64_t>

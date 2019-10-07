@@ -1,26 +1,29 @@
 
-#ifndef SERIAL_DFA_IMPL
-#define SERIAL_DFA_IMPL
-#include <stdint.h>
-#include <vector>
-#include <utility>
-#include <functional>
+#ifndef MYD_SERIAL_STATE_H
+#define MYD_SERIAL_STATE_H
+#include "definer.h"
 
-namespace parse {
+namespace automaton {
 
 template<typename stream_t, typename accepted_type>
 struct SerialState {
     typename std::enable_if<std::is_signed<accepted_type>::value>::type type_check() {};
+    
+    using definer = _SerialStateDefiner<stream_t, accepted_type>;
+    using _alloc = typename definer::Allocator;
+    
     using cur_type = SerialState<stream_t, accepted_type>;
-    typedef std::function<bool(stream_t)> predicate;
-    typedef std::pair<predicate, cur_type*> pattern;
+    using predicate = std::function<bool(stream_t)>;
+    using pattern = std::pair<predicate, cur_type*>;
+    
     struct any_flag{};
 
     static const any_flag any;
     static cur_type *discard;
-
     accepted_type accepted;
 
+    SerialState(accepted_type accepted);
+    SerialState();
     SerialState(const cur_type &b) : accepted(b.accepted) {}
     SerialState(cur_type &b) : accepted(b.accepted) {}
     SerialState(cur_type &&b) {
@@ -105,56 +108,46 @@ struct SerialState {
     }
 
     static cur_type *alloc() {
-        return allocator.alloc(-1);}
+        return _alloc::alloc(-1);}
 
     static cur_type *alloc(accepted_type accepted) {
-        return allocator.alloc(accepted);}
+        return _alloc::alloc(accepted);}
 
     static const std::pair<stream_t, cur_type*> &&string(const std::basic_string<stream_t> &str, cur_type *suffer_state) {
         if (str.length() <= 0) {
             throw std::invalid_argument("empty string transition is not allowed");
         }
         return std::move(_string(str, *suffer_state, str.length()-1));
-    };
-    struct Allocator {
-        std::vector<cur_type*> allocated;
-        Allocator() { };
-        ~Allocator() {
-            for (auto &node :allocated) {
-                delete node;
-                node = nullptr;
-            }
-            allocated.clear();
-        }
-        cur_type *alloc(accepted_type accepted) {
-            cur_type *node = new cur_type(accepted);
-            allocated.push_back(node);
-            return node;
-        };
-    };
+    }
 private:
-    SerialState(accepted_type accepted): accepted(accepted) {}
-    SerialState(): accepted(-1) {}
+
     std::vector<pattern> patterns;
 
-    static Allocator allocator;
-    static bool _any(stream_t) {
-        return true;
-    }
     static const std::pair<stream_t, cur_type*> &&_string(
         const std::basic_string<stream_t> &str,
         cur_type &suffer_state,
         typename std::make_signed<size_t>::type str_pos
-    ) {
-        if (str_pos == 0) { return std::move(std::make_pair(str[str_pos], &suffer_state)); }
-        return std::move(_string(str, *alloc() >> std::make_pair(str[str_pos], &suffer_state), str_pos-1));
-    };
+    );
 
+    static bool _any(stream_t c) { return c != EOF; }
 };
 
 template<typename stream_t, typename accepted_type>
-typename SerialState<stream_t, accepted_type>::Allocator 
-    SerialState<stream_t, accepted_type>::allocator;
+SerialState<stream_t, accepted_type>::SerialState(accepted_type accepted): accepted(accepted) {}
+
+template<typename stream_t, typename accepted_type>
+SerialState<stream_t, accepted_type>::SerialState(): accepted(-1) {}
+
+template<typename stream_t, typename accepted_type>
+const std::pair<stream_t, SerialState<stream_t, accepted_type>*>&&
+SerialState<stream_t, accepted_type>::_string(
+    const std::basic_string<stream_t> &str,
+    SerialState<stream_t, accepted_type> &suffer_state,
+    typename std::make_signed<size_t>::type str_pos
+) {
+    if (str_pos == 0) { return std::move(std::make_pair(str[str_pos], &suffer_state)); }
+    return std::move(_string(str, *alloc() >> std::make_pair(str[str_pos], &suffer_state), str_pos-1));
+};
 
 template<typename stream_t, typename accepted_type>
 const typename SerialState<stream_t, accepted_type>::any_flag
@@ -163,27 +156,6 @@ const typename SerialState<stream_t, accepted_type>::any_flag
 template<typename stream_t, typename accepted_type>
 typename SerialState<stream_t, accepted_type>::cur_type
     *SerialState<stream_t, accepted_type>::discard = SerialState<stream_t, accepted_type>::alloc(-2);
-
-
-template<typename stream_t, typename accepted_type=int64_t>
-struct SerialFA
-{
-    typename std::enable_if<is_char<stream_t>::value>::type type_check() {};
-    public:
-    using fa_state = SerialState<stream_t, accepted_type>;
-    SerialFA(const std::function<fa_state*()> &once) { entry = once(); }
-    
-    template<typename StreamT>
-    inline accepted_type match(stream_t &current_token, std::basic_string<stream_t> &result, StreamT &a) {
-        return entry->match(current_token, result, a);
-    }
-    static bool is_accepted(accepted_type accepted) {
-        return fa_state::is_accepted(accepted);
-    }
-
-    private:
-    fa_state *entry;
-};
 
 }
 

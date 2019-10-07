@@ -1,8 +1,9 @@
 
-
-#ifndef MAP_STATE_HHH
-#define MAP_STATE_HHH
+#ifndef MYD_MAP_STATE_H
+#define MYD_MAP_STATE_H
 #include <map>
+
+namespace automaton {
 
 template<typename stream_t, typename accepted_type>
 struct MapState {
@@ -29,5 +30,7 @@ struct MapState {
     const cur_type* &at(const stream_t &c) { return this->nx.at(c); }
     bool count(const stream_t &c) { return this->nx.count(c); }
 };
+
+}
 
 #endif

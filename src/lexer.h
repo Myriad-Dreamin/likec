@@ -1,31 +1,32 @@
 
+#ifndef MYD_LEXER_H
+#define MYD_LEXER_H
 
-#ifndef LEXER_H
-#define LEXER_H
-
-#include "const.cpp"
-#include "lexer-result.cpp"
-#include "stream.cpp"
+#include "definer.h"
 #include <iostream>
-#include <stdint.h>
 
 namespace parse {
 
-template<typename stream_t, int64_t buffer_size>
+template<typename stream_t>
+class LexerResult;
+
+template<typename stream_t, int64_t buffer_size, class Stream>
 class Lexer {
 private:
+    using istream = std::basic_istream<stream_t>;
+    using result_type = LexerResult<stream_t>;
+    using string = std::basic_string<stream_t>;
+
     stream_t nextToken;
-    Stream<stream_t, buffer_size> program;
-    LexerResult<stream_t> *result;
+    Stream program;
+    result_type *result;
 
 public:
-    
-    Lexer(std::basic_istream<stream_t> &in) : program(&in) {
-        this->nextToken = program.Read();
-    }
+    Lexer(istream &in);
 
-    static LexerResult<stream_t> *new_result();
-    LexerResult<stream_t> *parse(LexerResult<stream_t> *result);
+    static result_type *new_result();
+    result_type *parse(result_type *result);
+
     bool parseKeywords();
     bool parseOperator();
     bool parseComment();
@@ -35,10 +36,11 @@ public:
     bool parseSpace();
     bool parseConstChar();
     bool parseConstString();
+
 private:
-    void reclaim(const std::basic_string<stream_t> &s);
+    void reclaim(const string &s);
 };
+
 }
+
 #endif
-
-

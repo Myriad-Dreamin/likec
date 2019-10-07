@@ -1,13 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include "src/lexer.h"
-#include "src/lexer-impl.cpp"
-#include "src/words-fa.cpp"
+#include "src/export.h"
+#include "src/svdx.h"
 #define finally 
-
-
-using namespace parse;
 
 void print_help() {
     std::cout <<
@@ -17,8 +13,6 @@ void print_help() {
     "    -s: use stdin from console\n";
     exit(0);
 }
-
-
 
 int main(int argc, char *argv[]) {
     const char *output_path = nullptr, *input_path = nullptr;
@@ -61,8 +55,10 @@ int main(int argc, char *argv[]) {
     }
 
     try {
-        Lexer<char, 1024> lexer(*streamX);
-        auto result = Lexer<char, 1024>::new_result();
+        using LexerInstanceClass = parse::basic_lexer<1024>::lexer;
+
+        LexerInstanceClass lexer(*streamX);
+        auto result = LexerInstanceClass::new_result();
         *streamY << lexer.parse(result) << std::endl;
     } catch (std::exception &e) {
         std::cout << "catch " << e.what() << std::endl;

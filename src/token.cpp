@@ -1,15 +1,13 @@
 
-
 #ifndef TOKEN_TYPES_CPP
 #define TOKEN_TYPES_CPP
-#include "const.cpp"
 
+#include "definer.h"
 
 namespace parse {
 
 template<typename stream_t>
 class LexerResult;
-
 
 template<typename stream_t>
 struct Identifier {

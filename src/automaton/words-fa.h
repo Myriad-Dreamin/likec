@@ -1,12 +1,13 @@
 
 #ifndef WORDS_DFA_H
 #define WORDS_DFA_H
-#include <stdint.h>
+
+#include "definer.h"
 #include "map-state.h"
-#include "type-traits.h"
 
+namespace automaton {
 
-template<typename stream_t, typename accepted_type=int64_t>
+template<typename stream_t, typename accepted_type>
 class WordsFA{
     typename std::enable_if<is_char<stream_t>::value>::type type_check() {};
     public:
@@ -32,4 +33,5 @@ class WordsFA{
     void build(const std::basic_string<stream_t> &s, accepted_type accepted);
 };
 
+}
 #endif

@@ -1,9 +1,6 @@
 
-
-
-
-#ifndef STREAM_TTTT_CPP
-#define STREAM_TTTT_CPP
+#ifndef MYD_STREAM_CPP
+#define MYD_STREAM_CPP
 #include <queue>
 #include <string>
 #include <sstream>
@@ -12,6 +9,10 @@ namespace parse {
 
 template<typename stream_t, int64_t buffer_size>
 class Stream {
+    using istream = std::basic_istream<stream_t>;
+    using string = std::basic_string<stream_t>;
+    using deque = std::deque<stream_t>;
+
     typedef bool even_check[-(buffer_size & 1)];
     typedef bool zero_check[buffer_size - 1];
 
@@ -21,12 +22,12 @@ class Stream {
     int64_t last_column, lastlast_column;
     int64_t recorded_row, recorded_col, recorded_offset;
     int64_t row, col;
-    std::basic_istream<stream_t> *in;
-    std::deque<stream_t> buffer;
-    std::deque<stream_t> unread_buffer;
+    istream *in;
+    deque buffer;
+    deque unread_buffer;
     
     public:
-    Stream(std::basic_istream<stream_t> *in) {
+    Stream(istream *in) {
         this->in = in; (*in)  >> std::noskipws;
         this->recorded_offset = 0;
         last_column = lastlast_column = 0;
@@ -74,13 +75,13 @@ class Stream {
         col = this->recorded_col;
     }
 
-    void collect_lines(std::basic_string<stream_t> &line, std::basic_string<stream_t> &line_pointer) {
+    void collect_lines(string &line, string &line_pointer) {
         stream_t bit;
         // std::cout << "(" << this->recorded_offset << " " << this->row << " " << this->col << ")";
         while(unread_buffer.size() && ((bit = Unread()) != '\n'));
         if ((this->recorded_offset != 0 && unread_buffer.size() == 0) && bit != '\n') {
-            line = std::basic_string<stream_t>("<line is too long>");
-            line_pointer = std::basic_string<stream_t>("");
+            line = string("<line is too long>");
+            line_pointer = string("");
             return;
         }
         if(bit == '\n')bit = Read();
@@ -99,7 +100,7 @@ class Stream {
                 line_pointer.push_back(c == this->recorded_col ? '^' : ' ');
                 std::basic_stringstream<stream_t> sstream;
                 sstream << std::hex << bit;
-                std::basic_string<stream_t> num = sstream.str();
+                string num = sstream.str();
                 for(int i = (stream_unit_size << 1) - num.length(); i > 0; i--) {
                     line.push_back('0');
                 }
@@ -173,7 +174,7 @@ class Stream {
     }
 
     private:
-    inline void shrink(std::deque<stream_t> &buffer) {
+    inline void shrink(deque &buffer) {
         if (buffer.size() > buffer_size) {
             if (in->fail()) {
                 in->seekg(0, std::ios::end);
@@ -200,7 +201,7 @@ class Stream {
         }
     }
 
-    inline void fill(std::deque<stream_t> &buffer) {
+    inline void fill(deque &buffer) {
         stream_t bit;
         while (buffer.size() < half_buffer_size && ((*in) >> bit)) {
             // std::cout << "[ "<< bit <<" ]";
@@ -208,7 +209,7 @@ class Stream {
         }
     }
 
-    inline void fit(std::deque<stream_t> &buffer) {
+    inline void fit(deque &buffer) {
         if (buffer.size() > buffer_size) {
             shrink(buffer);
         } else if (buffer.size() == 0) {
@@ -216,7 +217,7 @@ class Stream {
         }
     }
 
-    inline stream_t last(std::deque<stream_t> &buffer) {
+    inline stream_t last(deque &buffer) {
         stream_t bit;
         if (buffer.size() == 0) {
             bit = EOF;

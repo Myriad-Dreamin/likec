@@ -3,25 +3,26 @@
 #ifndef LEXER_IMPL
 #define LEXER_IMPL
 
-#include "const.cpp"
-#include "words-fa.h"
-#include "serial-fa.cpp"
 #include "lexer.h"
-#include <limits>
+#include "automaton/export.h"
 #include <cctype>
 
 namespace parse
 {
 
-    
-template<typename stream_t, int64_t buffer_size>
-LexerResult<stream_t> *Lexer<stream_t, buffer_size>::new_result()
+template<typename stream_t, int64_t buffer_size, class Stream>
+LexerResult<stream_t> *Lexer<stream_t, buffer_size, Stream>::new_result()
 {
     return new LexerResult<stream_t>();
 }
 
-template<typename stream_t, int64_t buffer_size>
-LexerResult<stream_t> *Lexer<stream_t, buffer_size>::parse(LexerResult<stream_t> *result)
+template<typename stream_t, int64_t buffer_size, class Stream>
+Lexer<stream_t, buffer_size, Stream>::Lexer(istream &in) : program(&in) {
+    this->nextToken = program.Read();
+}
+
+template<typename stream_t, int64_t buffer_size, class Stream>
+LexerResult<stream_t> *Lexer<stream_t, buffer_size, Stream>::parse(LexerResult<stream_t> *result)
 {
     this->result = result;
     this->result->register_report_handler([this](int64_t &row,int64_t &col) {
@@ -49,9 +50,10 @@ LexerResult<stream_t> *Lexer<stream_t, buffer_size>::parse(LexerResult<stream_t>
     return result;
 }
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseKeywords()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseKeywords()
 {
+    using namespace automaton;
     static WordsFA<stream_t> matcher(_key_words, std::extent<decltype(_key_words)>::value);
     auto accepted = matcher.match(this->nextToken, this->program);
     if (!WordsFA<stream_t>::is_accepted(accepted)) {
@@ -69,12 +71,13 @@ bool Lexer<stream_t, buffer_size>::parseKeywords()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseOperator()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseOperator()
 {
-    static WordsFA<stream_t> matcher(_operators, std::extent<decltype(_operators)>::value);
+    using namespace automaton;
+    static WordsFA<stream_t, raw_token_type> matcher(_operators, std::extent<decltype(_operators)>::value);
     auto accepted = matcher.match(this->nextToken, this->program);
-    if (!WordsFA<stream_t>::is_accepted(accepted)) {
+    if (!WordsFA<stream_t, raw_token_type>::is_accepted(accepted)) {
         return false;
     }
 
@@ -84,8 +87,8 @@ bool Lexer<stream_t, buffer_size>::parseOperator()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseMark()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseMark()
 {
     for (int16_t i = 0; i < MarkRange; i++) {
         if (this->nextToken == _marks[i]) {
@@ -98,8 +101,8 @@ bool Lexer<stream_t, buffer_size>::parseMark()
     return false;
 }
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseIdentifier()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseIdentifier()
 {
     if (this->nextToken == '_' || isalpha(this->nextToken)) {
         std::basic_string<stream_t> buf;
@@ -122,9 +125,10 @@ bool ishex(stream_t c) {
 };
 
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseNumber()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseNumber()
 {
+    using namespace automaton;
     using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state    *begin                   = fa_state::alloc(),
@@ -189,9 +193,10 @@ bool Lexer<stream_t, buffer_size>::parseNumber()
 }
 
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseConstString()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseConstString()
 {
+    using namespace automaton;
     using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state    *begin        = fa_state::alloc(),
@@ -236,9 +241,10 @@ bool Lexer<stream_t, buffer_size>::parseConstString()
 }
 
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseConstChar()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseConstChar()
 {
+    using namespace automaton;
     using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state    *begin        = fa_state::alloc(),
@@ -272,7 +278,7 @@ bool Lexer<stream_t, buffer_size>::parseConstChar()
         reclaim(buf);
         return false;
     }
-    if (!SerialFA<stream_t>::is_accepted(accepted)) {
+    if (!SerialFA<stream_t, raw_token_type>::is_accepted(accepted)) {
         return false;
     }
 
@@ -281,9 +287,10 @@ bool Lexer<stream_t, buffer_size>::parseConstChar()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseComment()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseComment()
 {
+    using namespace automaton;
     using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state   *begin        = fa_state::alloc(),
@@ -325,8 +332,8 @@ bool Lexer<stream_t, buffer_size>::parseComment()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size>
-bool Lexer<stream_t, buffer_size>::parseSpace()
+template<typename stream_t, int64_t buffer_size, class Stream>
+bool Lexer<stream_t, buffer_size, Stream>::parseSpace()
 {
     // std::cout << isspace(this->nextToken) << "////" << this->nextToken << " " << int(this->nextToken) << std::endl;
     if (isspace(this->nextToken)) {
@@ -340,8 +347,8 @@ bool Lexer<stream_t, buffer_size>::parseSpace()
 }
 
 
-template<typename stream_t, int64_t buffer_size>
-void Lexer<stream_t, buffer_size>::reclaim(const std::basic_string<stream_t> &s) {
+template<typename stream_t, int64_t buffer_size, class Stream>
+void Lexer<stream_t, buffer_size, Stream>::reclaim(const std::basic_string<stream_t> &s) {
     // this->program.Unread(this->nextToken);
     this->program.Unread();
     for (size_t i = s.size() - 1; i > 0; i--) {

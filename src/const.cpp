@@ -1,8 +1,6 @@
 
-
-
-#ifndef CCC_CONST
-#define CCC_CONST
+#ifndef MYD_CXX_ASCII_CONST
+#define MYD_CXX_ASCII_CONST
 #include <string>
 
 namespace parse {

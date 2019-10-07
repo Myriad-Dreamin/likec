@@ -1,10 +1,10 @@
 
-
 #ifndef WORDS_DFA_IMPL
 #define WORDS_DFA_IMPL
-#include "type-traits.h"
-#include <stdint.h>
-#include "map-state.h"
+
+#include "words-fa.h"
+
+namespace automaton {
 
 template<typename stream_t, typename accepted_type>
 WordsFA<stream_t, accepted_type>::WordsFA(const std::basic_string<stream_t> s[], size_t len) {
@@ -76,6 +76,6 @@ accepted_type WordsFA<stream_t, accepted_type>::_match(stream_t &current_token, 
     return cur->accepted;
 } 
 
-
+}
 
 #endif

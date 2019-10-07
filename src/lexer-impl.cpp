@@ -219,6 +219,12 @@ bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseNumber()
     auto accepted = matcher.match(nextToken, buf, program);
     // std::cout << "?" << nextToken << ":" << int(nextToken) << " " << buf << ".." << accepted << std::endl; 
     if (!SerialFA<stream_t>::is_accepted(accepted)) {
+        if (buf.length() == 2 && (buf == "0x" || buf == "0X")) {
+            result->register_token(static_cast<TokenType>(TokenType::NumberInteger), "0");
+            nextToken = buf.back();
+            program.Unread();
+            return true;
+        }
         return false;
     }
 
@@ -370,6 +376,7 @@ bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseSpace()
             // std::cout << nextToken << " " << int(nextToken) << " " << isspace(nextToken) << "| ";
             nextToken = program.Read();
         }
+        result->register_token(TokenType::SpaceType, " ");
         return true;
     }
     return false;

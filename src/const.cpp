@@ -217,6 +217,9 @@ enum class TokenType: int16_t {
     CommentType,
     ConstCharType,
     ErrorInfoType,
+    SpaceType,
+    
+    Length,
 
     KeywordBegin = KeywordAuto,
     KeywordEnd = KeywordWhile + 1,
@@ -239,7 +242,8 @@ const raw_token_type ConstNumberRange =
     static_cast<raw_token_type>(TokenType::ConstNumberEnd) - static_cast<raw_token_type>(TokenType::ConstNumberBegin);
 const raw_token_type MarkRange = 
     static_cast<raw_token_type>(TokenType::MarkEnd) - static_cast<raw_token_type>(TokenType::MarkBegin);
-
+const raw_token_type TokenCounts =
+    static_cast<raw_token_type>(TokenType::Length);
 
 enum class LexerCode: uint16_t {
     OK,
@@ -445,6 +449,8 @@ const char *stringify(const TokenType c) {
         return "Error";
     case TokenType::ConstCharType:
         return "ConstChar";
+    case TokenType::SpaceType:
+        return "Space";
     
     default:
         return "<error-token-type>";

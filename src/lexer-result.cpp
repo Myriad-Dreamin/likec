@@ -60,6 +60,10 @@ Token<stream_t> *LexerResult<stream_t>::register_token(TokenType token_type, con
         return register_token(new ConstString<stream_t>(buf));
     }
 
+    if (token_type::is_space(token_type)) {
+        return register_token(new Space<stream_t>(buf));
+    }
+
     if (token_type::is_const_char(token_type)) {
         return register_token(new ConstChar<stream_t>(buf));
     }
@@ -91,11 +95,16 @@ void LexerResult<stream_t>::register_report_handler(const report_handler_type &f
 template<typename stream_t>
 std::ostream &operator <<(std::ostream &a, const LexerResult<stream_t> &b) {
     a << "LexerResult {\n    code(" << stringify(b.code) << "), ";
+    a << "error(" << std::to_string(b.count[static_cast<raw_token_type>(TokenType::ErrorInfoType)]) << "), ";
     a << "lines(" << std::to_string(b.lines) << "), ";
     a << "characters(" << std::to_string(b.offset) << ")";
     a << "\n";
     for(auto &token :b.tokens) {
         a << "    " << token << "\n";
+    }
+
+    for(raw_token_type i = 0; i < TokenCounts; i++) {
+        a << "    the count of " << stringify(TokenType(i)) << ": " << std::to_string(b.count[i]) << "\n";
     }
     a << "}";
     return a;
@@ -112,6 +121,7 @@ template<typename T>
 Token<stream_t> *LexerResult<stream_t>::new_token(T payload) {
     auto token = new Token<stream_t>(payload);
     report_handler(token->line, token->column);
+    ++count[static_cast<raw_token_type>(token->token_type)];
     tokens.push_back(token);
     return token;
 }

@@ -20,6 +20,7 @@ struct LexerResult {
     LexerCode code;
     int64_t lines, offset;
     std::vector<token_type*> tokens;
+    int64_t count[TokenCounts];
     std::unordered_map<string, token_type*> table;
     report_handler_type report_handler;
 

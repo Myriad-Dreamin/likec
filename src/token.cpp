@@ -67,6 +67,25 @@ struct ConstString {
 };
 
 template<typename stream_t>
+struct Space {
+    const std::basic_string<stream_t> name;
+    
+    Space(const std::basic_string<stream_t> &name)
+    : name(name) {}
+    
+    
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Space<stream_t> &b) {
+        a << "type(" << stringify(TokenType::SpaceType) << "), content(" << b.name << ")";
+        return a;
+    }
+
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Space<stream_t> *b) {
+        a << *b;
+        return a;
+    }
+};
+
+template<typename stream_t>
 struct ConstChar {
     const std::basic_string<stream_t> name;
     
@@ -161,6 +180,12 @@ public:
         this->token_type = TokenType::ConstStringType;
     }
 
+    Token(const Space<stream_t> *space) {
+        last_token_reference = nullptr;
+        token_reference = reinterpret_cast<void*>(const_cast<Space<stream_t> *>(space));;
+        this->token_type = TokenType::SpaceType;
+    }
+
     Token(const Comment<stream_t> *comment) {
         last_token_reference = nullptr;
         token_reference = reinterpret_cast<void*>(const_cast<Comment<stream_t> *>(comment));;
@@ -242,6 +267,13 @@ public:
         return nullptr;
     }
 
+    const Space<stream_t> *as_space() const {
+        if (is_space()) {
+            return reinterpret_cast<const struct Space<stream_t> *>(token_reference);
+        }
+        return nullptr;
+    }
+
     const ConstChar<stream_t> *as_const_char() const {
         if (is_const_char()) {
             return reinterpret_cast<const struct ConstChar<stream_t> *>(token_reference);
@@ -310,6 +342,14 @@ public:
         return TokenType::ConstStringType == token_type;
     }
     
+    bool is_space() const {
+        return TokenType::SpaceType == token_type;
+    }
+
+    static bool is_space(TokenType token_type) {
+        return TokenType::SpaceType == token_type;
+    }
+
     bool is_const_char() const {
         return TokenType::ConstCharType == token_type;
     }
@@ -354,6 +394,11 @@ public:
 
         if (b.is_const_string()) {
             a << b.as_const_string() << ")";
+            return a;
+        }
+
+        if (b.is_space()) {
+            a << b.as_space() << ")";
             return a;
         }
 

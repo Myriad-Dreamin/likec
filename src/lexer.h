@@ -17,9 +17,13 @@ private:
     using result_type = LexerResult<stream_t>;
     using string = std::basic_string<stream_t>;
 
-    stream_t nextToken;
-    Stream program;
+    //临时保存的字符串结果缓冲区
     string buf;
+    //输入流
+    Stream program;
+    //LL(1)探针
+    stream_t nextToken;
+    //词法分析结果
     result_type *result;
 
 public:
@@ -27,15 +31,15 @@ public:
 
     static result_type *new_result();
     result_type *parse(result_type *result);
-
+    
+    bool parseMark();
+    bool parseSpace();
+    bool parseNumber();
+    bool parseComment();
     bool parseKeywords();
     bool parseOperator();
-    bool parseComment();
-    bool parseMark();
-    bool parseIdentifier();
-    bool parseNumber();
-    bool parseSpace();
     bool parseConstChar();
+    bool parseIdentifier();
     bool parseConstString();
 
     bool emplaceDot();

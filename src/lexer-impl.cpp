@@ -22,14 +22,23 @@ Lexer<stream_t, buffer_size, Stream, unread_flag>::Lexer(istream &in) : program(
 }
 
 template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
-LexerResult<stream_t> *Lexer<stream_t, buffer_size, Stream, unread_flag>::parse(LexerResult<stream_t> *result)
+LexerResult<stream_t> *
+Lexer<stream_t, buffer_size, Stream, unread_flag>::parse(
+    LexerResult<stream_t> *result)
 {
+    // 绑定结果结构体
     this->result = result;
+    
+    // 绑定取行列句柄到流
     result->register_report_handler([this](int64_t &row,int64_t &col) {
         program.get_row_col(row, col);
     });
+
+    // 初始化结果状态为正确
     result->code = LexerCode::OK;
     bool flag;
+
+    // 处理到结束
     while(nextToken != EOF) {
         parseSpace();
         program.record();
@@ -190,7 +199,7 @@ bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseNumber()
         
         (*integer)
                 >> std::make_pair(isdigit, integer)
-                >> std::make_pair('.', maybe_decimal)
+                >> std::make_pair('.', decimal)
                 >> std::make_pair('e', maybe_exp_accept_pm);
         
         (*maybe_hex)

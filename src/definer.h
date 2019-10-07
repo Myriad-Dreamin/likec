@@ -11,7 +11,6 @@
 #endif
 
 #include "const.cpp"
-#include "type-traits.h"
 #include <stdint.h>
 #include <limits>
 

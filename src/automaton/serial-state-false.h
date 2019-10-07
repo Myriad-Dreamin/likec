@@ -1,6 +1,6 @@
 
-#ifndef MYD_SERIAL_STATE_H
-#define MYD_SERIAL_STATE_H
+#ifndef MYD_SERIAL_STATE_FALSE_H
+#define MYD_SERIAL_STATE_FALSE_H
 #include "definer.h"
 #include <utility>
 #include <vector>
@@ -8,14 +8,14 @@
 
 namespace automaton {
 
-template<typename stream_t, typename accepted_type, bool unread_flag>
-struct SerialState {
+template<typename stream_t, typename accepted_type>
+struct SerialState<stream_t, accepted_type, false> {
     typename std::enable_if<std::is_signed<accepted_type>::value>::type type_check() {};
     
-    using definer = _SerialStateDefiner<stream_t, accepted_type, unread_flag>;
+    using definer = _SerialStateDefiner<stream_t, accepted_type, false>;
     using _alloc = typename definer::Allocator;
     
-    using cur_type = SerialState<stream_t, accepted_type, unread_flag>;
+    using cur_type = SerialState<stream_t, accepted_type, false>;
     using predicate = std::function<bool(stream_t)>;
     using pattern = std::pair<predicate, cur_type*>;
     
@@ -75,7 +75,4 @@ private:
 };
 
 }
-
-#include "serial-state-false.h"
-
 #endif

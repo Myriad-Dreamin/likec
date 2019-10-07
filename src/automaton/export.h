@@ -10,13 +10,14 @@
 
 #include "default-serial-state-allocator.cpp"
 #include "words-fa.cpp"
+#include "serial-state.cpp"
 
 myriad_dreamin_export_namespace automaton {
 
 template<typename stream_t=char, typename accepted_type=int64_t>
 myriad_dreamin_export_class WordsFA;
 
-template<typename stream_t=char, typename accepted_type=int64_t>
+template<typename stream_t=char, typename accepted_type=int64_t, bool unread_flag=true>
 myriad_dreamin_export_class SerialFA;
 
 }

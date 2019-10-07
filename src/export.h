@@ -12,16 +12,11 @@
 
 myriad_dreamin_export_namespace parse {
     template<int64_t buffer_size>
-    struct basic_lexer {
-        using lexer = Lexer<char, buffer_size, Stream<char,buffer_size> >;
-    };
+    using basic_lexer = Lexer<char, buffer_size, Stream<char,buffer_size>, true>;
 
-    using kbbuf_lexer = typename basic_lexer<1<<10>::lexer;
-    using mbbuf_lexer = typename basic_lexer<1<<20>::lexer;
-    using gbbuf_lexer = typename basic_lexer<1<<30>::lexer;
-
+    using kbbuf_lexer = basic_lexer<1<<10>;
+    using mbbuf_lexer = basic_lexer<1<<20>;
+    using gbbuf_lexer = basic_lexer<1<<30>;
 }
-
-
 
 #endif

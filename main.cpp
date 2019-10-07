@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     }
 
     try {
-        using LexerInstanceClass = parse::basic_lexer<1024>::lexer;
+        using LexerInstanceClass = parse::basic_lexer<1024>;
 
         LexerInstanceClass lexer(*streamX);
         auto result = LexerInstanceClass::new_result();

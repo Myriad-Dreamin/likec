@@ -8,11 +8,11 @@
 
 namespace automaton {
 
-template<typename stream_t, typename accepted_type>
-_SSAlloc<stream_t, accepted_type>::_SSAlloc() {}
+template<typename stream_t, typename accepted_type, bool unread_flag>
+_SSAlloc<stream_t, accepted_type, unread_flag>::_SSAlloc() {}
 
-template<typename stream_t, typename accepted_type>
-_SSAlloc<stream_t, accepted_type>::~_SSAlloc() {
+template<typename stream_t, typename accepted_type, bool unread_flag>
+_SSAlloc<stream_t, accepted_type, unread_flag>::~_SSAlloc() {
     for (auto &node :allocated) {
         delete node;
         node = nullptr;
@@ -20,20 +20,20 @@ _SSAlloc<stream_t, accepted_type>::~_SSAlloc() {
     allocated.clear();
 }
 
-template<typename stream_t, typename accepted_type>
-SerialState<stream_t, accepted_type> *
-_SSAlloc<stream_t, accepted_type>::alloc(accepted_type accepted) {
+template<typename stream_t, typename accepted_type, bool unread_flag>
+SerialState<stream_t, accepted_type, unread_flag> *
+_SSAlloc<stream_t, accepted_type, unread_flag>::alloc(accepted_type accepted) {
     cur_type *node = new cur_type(accepted);
-    _SSAlloc<stream_t, accepted_type>::allocator.allocated.push_back(node);
+    _SSAlloc<stream_t, accepted_type, unread_flag>::allocator.allocated.push_back(node);
     return node;
 }
 
-template<typename stream_t, typename accepted_type>
-void _SSAlloc<stream_t, accepted_type>::destroy(
-    SerialState<stream_t, accepted_type> * &) {}
+template<typename stream_t, typename accepted_type, bool unread_flag>
+void _SSAlloc<stream_t, accepted_type, unread_flag>::destroy(
+    SerialState<stream_t, accepted_type, unread_flag> * &) {}
 
-template<typename stream_t, typename accepted_type>
-_SSAlloc<stream_t, accepted_type> _SSAlloc<stream_t, accepted_type>::allocator;
+template<typename stream_t, typename accepted_type, bool unread_flag>
+_SSAlloc<stream_t, accepted_type, unread_flag> _SSAlloc<stream_t, accepted_type, unread_flag>::allocator;
 
 }
 

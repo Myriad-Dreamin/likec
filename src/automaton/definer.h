@@ -15,9 +15,9 @@
 
 myriad_dreamin_export_namespace automaton {
 
-template<typename stream_t, typename accepted_type>
+template<typename stream_t, typename accepted_type, bool unread_flag>
 myriad_dreamin_export_definer _SerialStateDefiner{
-    using Allocator = _SSAlloc<stream_t, accepted_type>;
+    using Allocator = _SSAlloc<stream_t, accepted_type, unread_flag>;
 };
 
 }

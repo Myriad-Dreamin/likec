@@ -4,6 +4,7 @@
 
 #include "definer.h"
 #include "map-state.h"
+#include "type-traits.h"
 
 namespace automaton {
 

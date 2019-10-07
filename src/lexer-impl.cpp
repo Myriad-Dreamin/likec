@@ -10,58 +10,85 @@
 namespace parse
 {
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-LexerResult<stream_t> *Lexer<stream_t, buffer_size, Stream>::new_result()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+LexerResult<stream_t> *Lexer<stream_t, buffer_size, Stream, unread_flag>::new_result()
 {
     return new LexerResult<stream_t>();
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-Lexer<stream_t, buffer_size, Stream>::Lexer(istream &in) : program(&in) {
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+Lexer<stream_t, buffer_size, Stream, unread_flag>::Lexer(istream &in) : program(&in) {
     this->nextToken = program.Read();
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-LexerResult<stream_t> *Lexer<stream_t, buffer_size, Stream>::parse(LexerResult<stream_t> *result)
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+LexerResult<stream_t> *Lexer<stream_t, buffer_size, Stream, unread_flag>::parse(LexerResult<stream_t> *result)
 {
     this->result = result;
-    this->result->register_report_handler([this](int64_t &row,int64_t &col) {
-        this->program.get_row_col(row, col);
+    result->register_report_handler([this](int64_t &row,int64_t &col) {
+        program.get_row_col(row, col);
     });
     result->code = LexerCode::OK;
-    while(this->nextToken != EOF) {
+    bool flag;
+    while(nextToken != EOF) {
         parseSpace();
-        this->program.record();
-        if (!(this->nextToken == EOF || parseSpace() || parseComment() || parseKeywords() ||
-            parseMark() || parseNumber() || parseConstString() || parseConstChar() ||
-            parseOperator() || parseIdentifier()))
+        program.record();
+        switch (nextToken)
         {
-            // std::cout << "QAQ" << this->nextToken << std::endl;
+        case EOF:
+            goto return_result;
+        case '/':
+            flag = parseComment() || parseOperator();
+            break;
+        case '"':
+            flag = parseConstString();
+            break;
+        case '\'':
+            flag = parseConstChar();
+            break;
+        case '.':
+            flag = parseNumber() || parseOperator();
+            break;
+        default:
+            if (isdigit(nextToken)) {
+                flag = parseNumber();
+            } else if (nextToken == '_' || isalpha(nextToken)) {
+                flag = parseKeywords() || parseIdentifier();
+            } else {
+                flag = parseMark() || parseOperator();
+            }
+            break;
+        }
+
+        if (!flag){
+            // std::cout << "QAQ" << nextToken << std::endl;
             std::basic_string<stream_t> line_buf, pointer_buf;
-            this->program.collect_lines(line_buf, pointer_buf);
+            program.collect_lines(line_buf, pointer_buf);
             result->set_error(line_buf, pointer_buf);
             result->code = LexerCode::NotMatch;
-            this->nextToken = this->program.Read();
+            nextToken = program.Read();
             // return result;
         }
     }
-    result->set_lines(this->program.lines());
-    result->set_offset(this->program.offset());
+
+    return_result:
+    result->set_lines(program.lines());
+    result->set_offset(program.offset());
     return result;
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseKeywords()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseKeywords()
 {
     using namespace automaton;
-    static WordsFA<stream_t> matcher(_key_words, std::extent<decltype(_key_words)>::value);
+    static WordsFA<stream_t, raw_token_type> matcher(_key_words, std::extent<decltype(_key_words)>::value);
     auto accepted = matcher.match(this->nextToken, this->program);
-    if (!WordsFA<stream_t>::is_accepted(accepted)) {
+    if (!WordsFA<stream_t, raw_token_type>::is_accepted(accepted)) {
         return false;
     }
 
     if (isalnum(this->nextToken)) {
-        reclaim(_key_words[accepted]);
+        set_buf(_key_words[accepted]);
         return false;
     }
 
@@ -71,8 +98,8 @@ bool Lexer<stream_t, buffer_size, Stream>::parseKeywords()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseOperator()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseOperator()
 {
     using namespace automaton;
     static WordsFA<stream_t, raw_token_type> matcher(_operators, std::extent<decltype(_operators)>::value);
@@ -87,8 +114,8 @@ bool Lexer<stream_t, buffer_size, Stream>::parseOperator()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseMark()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseMark()
 {
     for (int16_t i = 0; i < MarkRange; i++) {
         if (this->nextToken == _marks[i]) {
@@ -101,8 +128,8 @@ bool Lexer<stream_t, buffer_size, Stream>::parseMark()
     return false;
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseIdentifier()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseIdentifier()
 {
     if (this->nextToken == '_' || isalpha(this->nextToken)) {
         std::basic_string<stream_t> buf;
@@ -125,11 +152,11 @@ bool ishex(stream_t c) {
 };
 
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseNumber()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseNumber()
 {
     using namespace automaton;
-    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
+    using fa_state = typename SerialFA<stream_t, raw_token_type, unread_flag>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state    *begin                   = fa_state::alloc(),
                     *hex                     = fa_state::alloc(static_cast<raw_token_type>(TokenType::NumberHex)),
@@ -179,7 +206,7 @@ bool Lexer<stream_t, buffer_size, Stream>::parseNumber()
 
         return begin;
     };
-    static SerialFA<stream_t, raw_token_type> matcher(build);
+    static SerialFA<stream_t, raw_token_type, unread_flag> matcher(build);
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
@@ -193,11 +220,11 @@ bool Lexer<stream_t, buffer_size, Stream>::parseNumber()
 }
 
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseConstString()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseConstString()
 {
     using namespace automaton;
-    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
+    using fa_state = typename SerialFA<stream_t, raw_token_type, false>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state    *begin        = fa_state::alloc(),
                     *maybe_string = fa_state::alloc(),
@@ -209,7 +236,6 @@ bool Lexer<stream_t, buffer_size, Stream>::parseConstString()
         
         (*maybe_string)
                 >> std::make_pair('\n', fa_state::discard)
-                >> std::make_pair(EOF, fa_state::discard)
                 >> std::make_pair('\\', backslash)
                 >> std::make_pair('"', accept)
                 >> std::make_pair(fa_state::any, maybe_string);
@@ -221,7 +247,7 @@ bool Lexer<stream_t, buffer_size, Stream>::parseConstString()
 
         return begin;
     };
-    static SerialFA<stream_t, raw_token_type> matcher(build);
+    static SerialFA<stream_t, raw_token_type, false> matcher(build);
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
@@ -241,11 +267,11 @@ bool Lexer<stream_t, buffer_size, Stream>::parseConstString()
 }
 
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseConstChar()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseConstChar()
 {
     using namespace automaton;
-    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
+    using fa_state = typename SerialFA<stream_t, raw_token_type, unread_flag>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state    *begin        = fa_state::alloc(),
                     *maybe_char = fa_state::alloc(),
@@ -257,7 +283,6 @@ bool Lexer<stream_t, buffer_size, Stream>::parseConstChar()
         
         (*maybe_char)
                 >> std::make_pair('\n', fa_state::discard)
-                >> std::make_pair(EOF, fa_state::discard)
                 >> std::make_pair('\\', backslash)
                 >> std::make_pair('\'', accept)
                 >> std::make_pair(fa_state::any, maybe_char);
@@ -269,7 +294,7 @@ bool Lexer<stream_t, buffer_size, Stream>::parseConstChar()
 
         return begin;
     };
-    static SerialFA<stream_t, raw_token_type> matcher(build);
+    static SerialFA<stream_t, raw_token_type, unread_flag> matcher(build);
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
@@ -278,7 +303,7 @@ bool Lexer<stream_t, buffer_size, Stream>::parseConstChar()
         reclaim(buf);
         return false;
     }
-    if (!SerialFA<stream_t, raw_token_type>::is_accepted(accepted)) {
+    if (!SerialFA<stream_t, raw_token_type, unread_flag>::is_accepted(accepted)) {
         return false;
     }
 
@@ -287,11 +312,11 @@ bool Lexer<stream_t, buffer_size, Stream>::parseConstChar()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseComment()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseComment()
 {
     using namespace automaton;
-    using fa_state = typename SerialFA<stream_t, raw_token_type>::fa_state;
+    using fa_state = typename SerialFA<stream_t, raw_token_type, unread_flag>::fa_state;
     static auto build = [&]() -> fa_state* {
         fa_state   *begin        = fa_state::alloc(),
                     *maybe_comment = fa_state::alloc(),
@@ -307,23 +332,21 @@ bool Lexer<stream_t, buffer_size, Stream>::parseComment()
                 >> std::make_pair('*', skiplines);
                 
         (*skipline)
-                >> std::make_pair(EOF, accept)
                 >> fa_state::string(line_break, accept)
                 >> std::make_pair(fa_state::any, skipline);
                 
         (*skiplines)
-                >> std::make_pair(EOF, accept)
                 >> fa_state::string("*/", accept)
                 >> std::make_pair(fa_state::any, skiplines);
 
         return begin;
     };
-    static SerialFA<stream_t, raw_token_type> matcher(build);
+    static SerialFA<stream_t, raw_token_type, unread_flag> matcher(build);
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
     // std::cout << "?" << this->nextToken << ":" << int(this->nextToken) << " " << buf << ".." << accepted << std::endl; 
-    if (!SerialFA<stream_t>::is_accepted(accepted)) {
+    if (!SerialFA<stream_t, raw_token_type, unread_flag>::is_accepted(accepted)) {
         return false;
     }
 
@@ -332,8 +355,8 @@ bool Lexer<stream_t, buffer_size, Stream>::parseComment()
     return true;
 }
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-bool Lexer<stream_t, buffer_size, Stream>::parseSpace()
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+bool Lexer<stream_t, buffer_size, Stream, unread_flag>::parseSpace()
 {
     // std::cout << isspace(this->nextToken) << "////" << this->nextToken << " " << int(this->nextToken) << std::endl;
     if (isspace(this->nextToken)) {
@@ -347,8 +370,8 @@ bool Lexer<stream_t, buffer_size, Stream>::parseSpace()
 }
 
 
-template<typename stream_t, int64_t buffer_size, class Stream>
-void Lexer<stream_t, buffer_size, Stream>::reclaim(const std::basic_string<stream_t> &s) {
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+void Lexer<stream_t, buffer_size, Stream, unread_flag>::reclaim(const std::basic_string<stream_t> &s) {
     // this->program.Unread(this->nextToken);
     this->program.Unread();
     for (size_t i = s.size() - 1; i > 0; i--) {
@@ -356,6 +379,12 @@ void Lexer<stream_t, buffer_size, Stream>::reclaim(const std::basic_string<strea
         // this->program.Unread(s[i]);
     }
     this->nextToken = s[0];
+}
+
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
+void Lexer<stream_t, buffer_size, Stream, unread_flag>::set_buf(const std::basic_string<stream_t> &s) {
+    // this->program.Unread(this->nextToken);
+    buf = s;
 }
 
 } // namespace parse

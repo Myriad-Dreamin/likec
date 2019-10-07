@@ -10,7 +10,7 @@ namespace parse {
 template<typename stream_t>
 class LexerResult;
 
-template<typename stream_t, int64_t buffer_size, class Stream>
+template<typename stream_t, int64_t buffer_size, class Stream, bool unread_flag>
 class Lexer {
 private:
     using istream = std::basic_istream<stream_t>;
@@ -19,6 +19,7 @@ private:
 
     stream_t nextToken;
     Stream program;
+    string buf;
     result_type *result;
 
 public:
@@ -39,6 +40,7 @@ public:
 
 private:
     void reclaim(const string &s);
+    void set_buf(const string &s);
 };
 
 }

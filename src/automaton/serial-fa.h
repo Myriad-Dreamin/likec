@@ -7,15 +7,17 @@
 #include <vector>
 #include <utility>
 #include <functional>
+#include <type_traits>
 
 namespace automaton {
 
-template<typename stream_t, typename accepted_type>
+template<typename stream_t, typename accepted_type, bool unread_flag>
 class SerialFA
 {
-    typename std::enable_if<is_char<stream_t>::value>::type type_check() {};
+    typedef typename std::enable_if<is_char<stream_t>::value>::type type_check;
+    // typedef typename std::enable_if<std::is_same<unread_flag, std::bool_constant>::value>::type flag_check;
     public:
-    using fa_state = SerialState<stream_t, accepted_type>;
+    using fa_state = SerialState<stream_t, accepted_type, unread_flag>;
     SerialFA(const std::function<fa_state*()> &once) { entry = once(); }
     
     template<typename StreamT>

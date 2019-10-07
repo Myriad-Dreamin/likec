@@ -19,6 +19,7 @@ struct LexerResult {
     typedef std::function<void(int64_t&, int64_t&)> report_handler_type;
 
     LexerCode code;
+    int64_t lines, offset;
     std::vector<token_type*> tokens;
     std::unordered_map<std::basic_string<stream_t>, token_type*> table;
     report_handler_type report_handler;
@@ -28,7 +29,16 @@ struct LexerResult {
             delete token;
             token = nullptr;
         }
-    };
+    }
+
+    void set_lines(int64_t lines) {
+        this->lines = lines;
+    }
+    void set_offset(int64_t offset) {
+        this->offset = offset;
+    }
+
+
     
     template<typename T>
     token_type *register_token(const T *token_payload) {
@@ -90,7 +100,10 @@ struct LexerResult {
     }
 
     friend std::ostream &operator <<(std::ostream &a, const LexerResult &b) {
-        a << "LexerResult {\n    code(" << stringify(b.code) << ")\n";
+        a << "LexerResult {\n    code(" << stringify(b.code) << "), ";
+        a << "lines(" << std::to_string(b.lines) << "), ";
+        a << "characters(" << std::to_string(b.offset) << ")";
+        a << "\n";
         for(auto &token :b.tokens) {
             a << "    " << token << "\n";
         }

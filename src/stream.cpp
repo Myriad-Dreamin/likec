@@ -21,12 +21,12 @@ class Stream {
     int64_t last_column, lastlast_column;
     int64_t recorded_row, recorded_col, recorded_offset;
     int64_t row, col;
-    std::istream *in;
+    std::basic_istream<stream_t> *in;
     std::deque<stream_t> buffer;
     std::deque<stream_t> unread_buffer;
     
     public:
-    Stream(std::istream *in) {
+    Stream(std::basic_istream<stream_t> *in) {
         this->in = in; (*in)  >> std::noskipws;
         this->recorded_offset = 0;
         last_column = lastlast_column = 0;
@@ -76,13 +76,15 @@ class Stream {
 
     void collect_lines(std::basic_string<stream_t> &line, std::basic_string<stream_t> &line_pointer) {
         stream_t bit;
+        // std::cout << "(" << this->recorded_offset << " " << this->row << " " << this->col << ")";
         while(unread_buffer.size() && ((bit = Unread()) != '\n'));
-        if (unread_buffer.size() == 0 && bit != '\n') {
-            line = "<line is too long>";
-            line_pointer = "";
+        if ((this->recorded_offset != 0 && unread_buffer.size() == 0) && bit != '\n') {
+            line = std::basic_string<stream_t>("<line is too long>");
+            line_pointer = std::basic_string<stream_t>("");
             return;
         }
-        bit = Read();
+        if(bit == '\n')bit = Read();
+        // std::cout << "readbit?" << bit << ".";
         int64_t c = 1;
         while((bit = Read()) != EOF) {
             if (bit == '\n') {
@@ -95,7 +97,7 @@ class Stream {
                 line.push_back('['); 
                 line_pointer.push_back(' ');
                 line_pointer.push_back(c == this->recorded_col ? '^' : ' ');
-                std::stringstream sstream;
+                std::basic_stringstream<stream_t> sstream;
                 sstream << std::hex << bit;
                 std::basic_string<stream_t> num = sstream.str();
                 for(int i = (stream_unit_size << 1) - num.length(); i > 0; i--) {
@@ -160,6 +162,14 @@ class Stream {
     void record() {
         this->recorded_row = this->row;
         this->recorded_col = this->col;
+    }
+
+    int64_t offset() {
+        return this->recorded_offset - (this->unread_buffer.size() && this->unread_buffer.back() == EOF);
+    }
+
+    int64_t lines() {
+        return this->row;
     }
 
     private:

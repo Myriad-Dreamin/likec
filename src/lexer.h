@@ -20,7 +20,7 @@ private:
 
 public:
     
-    Lexer(std::istream &in) : program(&in) {
+    Lexer(std::basic_istream<stream_t> &in) : program(&in) {
         this->nextToken = program.Read();
     }
 

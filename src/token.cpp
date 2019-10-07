@@ -18,12 +18,12 @@ struct Identifier {
     Identifier(const std::basic_string<stream_t> &name) : name(name) {}
 
 
-    friend std::ostream &operator <<(std::ostream &a, const Identifier<stream_t> &b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Identifier<stream_t> &b) {
         a << "type(" << stringify(TokenType::IdentifierType) << "), name(" << b.name << ")";
         return a;
     }
 
-    friend std::ostream &operator <<(std::ostream &a, const Identifier<stream_t> *b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Identifier<stream_t> *b) {
         a << *b;
         return a;
     }
@@ -38,12 +38,12 @@ struct Number {
     : token_type(token_type), name(name) {}
 
     
-    friend std::ostream &operator <<(std::ostream &a, const Number<stream_t> &b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Number<stream_t> &b) {
         a << "type(" << stringify(b.token_type) << "), number(" << b.name << ")";
         return a;
     }
 
-    friend std::ostream &operator <<(std::ostream &a, const Number<stream_t> *b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Number<stream_t> *b) {
         a << *b;
         return a;
     }
@@ -57,12 +57,12 @@ struct ConstString {
     : name(name) {}
     
     
-    friend std::ostream &operator <<(std::ostream &a, const ConstString<stream_t> &b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const ConstString<stream_t> &b) {
         a << "type(" << stringify(TokenType::ConstStringType) << "), content(" << b.name << ")";
         return a;
     }
 
-    friend std::ostream &operator <<(std::ostream &a, const ConstString<stream_t> *b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const ConstString<stream_t> *b) {
         a << *b;
         return a;
     }
@@ -76,12 +76,12 @@ struct ConstChar {
     : name(name) {}
     
     
-    friend std::ostream &operator <<(std::ostream &a, const ConstChar<stream_t> &b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const ConstChar<stream_t> &b) {
         a << "type(" << stringify(TokenType::ConstCharType) << "), content(" << b.name << ")";
         return a;
     }
 
-    friend std::ostream &operator <<(std::ostream &a, const ConstChar<stream_t> *b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const ConstChar<stream_t> *b) {
         a << *b;
         return a;
     }
@@ -95,14 +95,14 @@ struct ErrorInfo {
     : name("error"), line(line), pointer(pointer) {}
     
     
-    friend std::ostream &operator <<(std::ostream &a, const ErrorInfo<stream_t> &b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const ErrorInfo<stream_t> &b) {
         a << "type(" << stringify(TokenType::ErrorInfoType) << ")\n";
         a << "error-line:" << b.line << "\n";
         a << "           " << b.pointer << "\n";
         return a;
     }
 
-    friend std::ostream &operator <<(std::ostream &a, const ErrorInfo<stream_t> *b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const ErrorInfo<stream_t> *b) {
         a << *b;
         return a;
     }
@@ -116,12 +116,12 @@ struct Comment {
     : name(name) {}
     
     
-    friend std::ostream &operator <<(std::ostream &a, const Comment<stream_t> &b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Comment<stream_t> &b) {
         a << "type(" << stringify(TokenType::CommentType) << "), content(" << b.name << ")";
         return a;
     }
 
-    friend std::ostream &operator <<(std::ostream &a, const Comment<stream_t> *b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Comment<stream_t> *b) {
         a << *b;
         return a;
     }
@@ -345,7 +345,7 @@ public:
     }
     
 
-    friend std::ostream &operator <<(std::ostream &a, const Token<stream_t> &b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Token<stream_t> &b) {
         a << "[line, column](" + std::to_string(b.line) + "," + std::to_string(b.column) + "), "; 
         a << "last token fields (" << reinterpret_cast<uint64_t>(b.last_token_reference) << "), ";
         a << "this token (" << reinterpret_cast<uint64_t>(&b) << ", ";
@@ -383,7 +383,7 @@ public:
         return a;
     }
     
-    friend std::ostream &operator <<(std::ostream &a, const Token<stream_t> *b) {
+    friend std::basic_ostream<stream_t> &operator <<(std::basic_ostream<stream_t> &a, const Token<stream_t> *b) {
         a << *b;
         return a;
     }

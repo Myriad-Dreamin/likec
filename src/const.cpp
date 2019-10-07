@@ -113,6 +113,8 @@ const char _marks[] = {
     '}',
     '[',
     ']',
+    '#',
+    ';',
 };
 
 enum class TokenType: int16_t {
@@ -201,6 +203,8 @@ enum class TokenType: int16_t {
     MarkRBRACE,
     MarkLSQUARE,
     MarkRSQUARE,
+    MarkSharp,
+    MarkSemicolon,
 
     NumberHex,
     NumberInteger,
@@ -220,10 +224,21 @@ enum class TokenType: int16_t {
     ConstNumberBegin = NumberHex,
     ConstNumberEnd = NumberExponential + 1,
     MarkBegin = MarkLPAREN,
-    MarkEnd = MarkRSQUARE + 1,
+    MarkEnd = MarkSemicolon + 1,
     ErrorType = -1,
 };
+
 typedef std::underlying_type<TokenType>::type raw_token_type;
+
+const raw_token_type KeywordRange = 
+    static_cast<raw_token_type>(TokenType::KeywordEnd) - static_cast<raw_token_type>(TokenType::KeywordBegin);
+const raw_token_type OperatorRange = 
+    static_cast<raw_token_type>(TokenType::OperatorEnd) - static_cast<raw_token_type>(TokenType::OperatorBegin);
+const raw_token_type ConstNumberRange = 
+    static_cast<raw_token_type>(TokenType::ConstNumberEnd) - static_cast<raw_token_type>(TokenType::ConstNumberBegin);
+const raw_token_type MarkRange = 
+    static_cast<raw_token_type>(TokenType::MarkEnd) - static_cast<raw_token_type>(TokenType::MarkBegin);
+
 
 enum class LexerCode: uint16_t {
     OK,
@@ -405,6 +420,10 @@ const char *stringify(const TokenType c) {
         return "MarkLSQUARE";
     case TokenType::MarkRSQUARE:
         return "MarkRSQUARE";
+    case TokenType::MarkSharp:
+        return "MarkSharp";
+    case TokenType::MarkSemicolon:
+        return "MarkSemicolon";
         
     case TokenType::NumberHex:
         return "NumberHex";

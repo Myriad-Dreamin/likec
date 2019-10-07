@@ -35,7 +35,7 @@ LexerResult<stream_t> *Lexer<stream_t, buffer_size>::parse(LexerResult<stream_t>
             parseMark() || parseNumber() || parseConstString() || parseConstChar() ||
             parseOperator() || parseIdentifier()))
         {
-            std::cout << "QAQ" << this->nextToken << std::endl;
+            // std::cout << "QAQ" << this->nextToken << std::endl;
             std::basic_string<stream_t> line_buf, pointer_buf;
             this->program.collect_lines(line_buf, pointer_buf);
             result->set_error(line_buf, pointer_buf);
@@ -44,6 +44,8 @@ LexerResult<stream_t> *Lexer<stream_t, buffer_size>::parse(LexerResult<stream_t>
             // return result;
         }
     }
+    result->set_lines(this->program.lines());
+    result->set_offset(this->program.offset());
     return result;
 }
 
@@ -85,7 +87,7 @@ bool Lexer<stream_t, buffer_size>::parseOperator()
 template<typename stream_t, int64_t buffer_size>
 bool Lexer<stream_t, buffer_size>::parseMark()
 {
-    for (int16_t i = 0; i < 6; i++) {
+    for (int16_t i = 0; i < MarkRange; i++) {
         if (this->nextToken == _marks[i]) {
             result->register_token(static_cast<TokenType>(
                 static_cast<raw_token_type>(TokenType::MarkBegin) + i));
@@ -218,7 +220,7 @@ bool Lexer<stream_t, buffer_size>::parseConstString()
 
     std::basic_string<stream_t> buf;
     auto accepted = matcher.match(this->nextToken, buf, this->program);
-    std::cout << "?" << this->nextToken << ":" << int(this->nextToken) << " " << buf << ".." << accepted << std::endl; 
+    // std::cout << "?" << this->nextToken << ":" << int(this->nextToken) << " " << buf << ".." << accepted << std::endl; 
     if(accepted == fa_state::discard->accepted){
         reclaim(buf);
         return false;

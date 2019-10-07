@@ -80,7 +80,7 @@ struct SerialState {
         std::basic_string<stream_t> &result,
         StreamT &a) {
 
-        std::cout << reinterpret_cast<uint64_t>(this) << " matching" << current_token << ":" << int(current_token) << " " << this->accepted << std::endl;
+        // std::cout << reinterpret_cast<uint64_t>(this) << " matching" << current_token << ":" << int(current_token) << " " << this->accepted << std::endl;
         if (this == discard) {
             return this->accepted;
         }

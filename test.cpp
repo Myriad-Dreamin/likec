@@ -4,7 +4,7 @@
 tap
 "1\
 \
-tup\
+tup
 
 
 1+2
@@ -12,3 +12,8 @@ tup\
 orz
 ""
 "...
+abdc
+.1
+.fff
+'\n'
+.1ff

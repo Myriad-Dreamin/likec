@@ -11,8 +11,8 @@
 #include "stream.cpp"
 
 myriad_dreamin_export_namespace parse {
-    template<int64_t buffer_size>
-    using basic_lexer = Lexer<char, buffer_size, Stream<char,buffer_size>, true>;
+    template<int64_t buffer_size, bool unread_flag=true>
+    using basic_lexer = Lexer<char, buffer_size, Stream<char,buffer_size>, unread_flag>;
 
     using kbbuf_lexer = basic_lexer<1<<10>;
     using mbbuf_lexer = basic_lexer<1<<20>;

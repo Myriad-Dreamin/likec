@@ -60,7 +60,7 @@ inline accepted_type WordsFA<stream_t, accepted_type>::match(stream_t &current_t
 template<typename stream_t, typename accepted_type>
 template<typename StreamT>
 accepted_type WordsFA<stream_t, accepted_type>::_match(stream_t &current_token, StreamT &a, const dfa_state *cur) {
-    // std::cout << current_token << " " << int(current_token) << std::endl;
+    std::cout << current_token << " " << int(current_token) << std::endl;
     if (cur->nx.count(current_token)) {
         stream_t bit = a.Read();
         std::swap(current_token, bit);

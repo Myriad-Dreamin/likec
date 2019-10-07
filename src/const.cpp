@@ -8,14 +8,17 @@ namespace parse {
 #if (defined _WIN32)
     // static const std::string line_break = "\r\n";
     static const std::string line_break = "\n";
+    const size_t line_break_length = 1;
 #endif
 
 #if (defined __linux__) || (defined linux) || (defined __linux)
     static const std::string line_break = "\n";
+    const size_t line_break_length = 1;
 #endif
 
 #if ((defined __APPLE__) || (defined __MACH__))
     static const std::string line_break = "\n";
+    const size_t line_break_length = 1;
 #endif
 
 const std::string _key_words[] = {

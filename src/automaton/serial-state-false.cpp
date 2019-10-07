@@ -13,20 +13,15 @@ inline accepted_type SerialState<stream_t, accepted_type,false>::match(
     StreamT &a) {
 
     // std::cout << reinterpret_cast<uint64_t>(this) << " matching" << current_token << ":" << int(current_token) << " " << this->accepted << std::endl;
-    if (this == discard) {
-        return this->accepted;
-    }
     
-    stream_t bit = a.Read();
     for (auto &p :patterns) {
         if(p.first(current_token)) {
-            result.push_back(current_token);
-            current_token = bit;
-            accepted_type nx_accepted = p.second->match(current_token, result, a);
-            if (is_accepted(nx_accepted)) {
-                return nx_accepted;
+            if (p.second == discard) {
+                return this->accepted;
             }
-            return this->accepted;
+            result.push_back(current_token);
+            current_token = a.Read();
+            return p.second->match(current_token, result, a);
         }
     }
     return this->accepted;

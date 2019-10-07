@@ -38,6 +38,8 @@ public:
     bool parseConstChar();
     bool parseConstString();
 
+    bool emplaceDot();
+
 private:
     void reclaim(const string &s);
     void set_buf(const string &s);

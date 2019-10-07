@@ -16,6 +16,7 @@ class Stream {
     typedef bool even_check[-(buffer_size & 1)];
     typedef bool zero_check[buffer_size - 1];
 
+    public:
     const size_t stream_unit_size = sizeof(stream_t);
     const size_t half_buffer_size = buffer_size >> 1;
 

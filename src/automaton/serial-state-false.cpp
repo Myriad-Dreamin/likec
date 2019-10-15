@@ -17,7 +17,7 @@ inline accepted_type SerialState<stream_t, accepted_type,false>::match(
     for (auto &p :patterns) {
         if(p.first(current_token)) {
             if (p.second == discard) {
-                return this->accepted;
+                return discard->accepted;
             }
             result.push_back(current_token);
             current_token = a.Read();

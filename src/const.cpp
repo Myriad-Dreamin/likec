@@ -114,7 +114,7 @@ const char _marks[] = {
     '}',
     '[',
     ']',
-    '#',
+    // '#',
     ';',
 };
 
@@ -204,10 +204,11 @@ enum class TokenType: int16_t {
     MarkRBRACE,
     MarkLSQUARE,
     MarkRSQUARE,
-    MarkSharp,
+    // MarkSharp,
     MarkSemicolon,
 
     NumberHex,
+    NumberHexExponential,
     NumberInteger,
     NumberDecimal,
     NumberExponential,
@@ -425,8 +426,8 @@ const char *stringify(const TokenType c) {
         return "MarkLSQUARE";
     case TokenType::MarkRSQUARE:
         return "MarkRSQUARE";
-    case TokenType::MarkSharp:
-        return "MarkSharp";
+    // case TokenType::MarkSharp:
+    //     return "MarkSharp";
     case TokenType::MarkSemicolon:
         return "MarkSemicolon";
         
@@ -436,6 +437,8 @@ const char *stringify(const TokenType c) {
         return "NumberInteger";
     case TokenType::NumberDecimal:
         return "NumberDecimal";
+    case TokenType::NumberHexExponential:
+        return "NumberHexExponential";
     case TokenType::NumberExponential:
         return "NumberExponential";
 
